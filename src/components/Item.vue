@@ -9,26 +9,47 @@
 
     interface IProps {
         modelValue: IItem[],
+        colorItems: IItem[],
         currentItem: IItem
     }
 
     interface IEmits {
         (u: 'update:modelValue', value: IItem[]): void
-        (u: 'changeColor', value: IItem[]): void
-        (u: 'changeColorCount', value: IItem[]): void
+        (u: 'changeColor', value: IItem, isChecked: boolean): void
+        (u: 'changeColorCount', value: IItem, isChecked: boolean): void
     }
 
     const props = defineProps<IProps>();
-    const { modelValue, currentItem } = toRefs(props);
+    const { modelValue, currentItem, colorItems } = toRefs(props);
 
     const emits = defineEmits<IEmits>();
 
-    const iconSquareModel = ref(unref(currentItem).color);
+    const isCurrentItemChecked = computed(() => !!unref(modelValue).find((item) => item.index === unref(currentItem).index));
+    const updatedColorItem = computed(() => unref(colorItems).find((item) => item.index === unref(currentItem).index));
 
-    const inputCountModel = ref(unref(currentItem).countColor);
+    const colorModel = computed({
+        get: () => unref(updatedColorItem)?.color || '',
+        set: (value: string) => {
+            const updatedItem = unref(updatedColorItem);
+            if (updatedItem) {
+                emits('changeColor', { ...updatedItem, color: value }, unref(isCurrentItemChecked));
+            }
+        },
+    });
+
+    const colorCountModel = computed({
+        get: () => unref(updatedColorItem)?.countColor || 0,
+        set: (value: number) => {
+            const updatedItem = unref(updatedColorItem);
+            if (updatedItem) {
+                emits('changeColorCount', { ...updatedItem, countColor: value }, unref(isCurrentItemChecked));
+            }
+        },
+    });
 
     const addCurrentItem = () => {
-        emits('update:modelValue', [...unref(modelValue), { ...unref(currentItem), color: unref(iconSquareModel), countColor: unref(inputCountModel) }]);
+        const updatedItem = unref(updatedColorItem) || unref(currentItem);
+        emits('update:modelValue', [...unref(modelValue), { ...updatedItem }]);
     };
 
     const deleteCurrentItem = () => {
@@ -46,14 +67,6 @@
         },
     });
 
-    watch(inputCountModel, (value) => {
-        emits('changeColorCount', { ...unref(currentItem), countColor: value });
-    });
-
-    watch(iconSquareModel, (value) => {
-        emits('changeColor', { ...unref(currentItem), color: value });
-    });
-
 </script>
 
 <template>
@@ -62,8 +75,8 @@
             Item {{ currentItem.index + 1 }}
         </CheckBox>
         <div class="item__wrapper">
-            <InputCount v-model="inputCountModel"></InputCount>
-            <InputColor v-model="iconSquareModel"></InputColor>
+            <InputCount v-model="colorCountModel"></InputCount>
+            <InputColor v-model="colorModel"></InputColor>
         </div>
     </div>
 </template>

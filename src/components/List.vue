@@ -21,9 +21,9 @@
     const { list } = toRefs(props);
     const storeLists = useStoreList();
     const { lists } = storeToRefs(storeLists);
-    const itemsColors = ref<IItem[]>([]);
+    const colorsItems = ref<IItem[]>(unref(list).items);
 
-    const itemsModel = computed({
+    const selectedItems = computed({
         get: () => unref(lists).find((storeList) => storeList.index === unref(list).index)?.items || [],
         set: (items: IItem[]) => {
             const isListAdded = !!unref(lists).find((storeList) => storeList.index === unref(list).index);
@@ -36,30 +36,21 @@
         },
     });
 
-    const changeColorHanlder = (item: IItem) => {
-        const isItemAdded = !!unref(lists).find((storeList) => storeList.index === unref(list).index)?.items.find((listItem) => listItem.index === item.index);
-        itemsColors.value = itemsColors.value.filter((itemColor) => itemColor.index !== item.index);
-        itemsColors.value.push(item);
-        // if (isItemAdded) {
+    const updateItemByColor = (item: IItem, isChecked: boolean) => {
+        colorsItems.value = colorsItems.value.filter((itemColor) => itemColor.index !== item.index);
+        colorsItems.value.push(item);
 
-        // }
-    };
-
-    const changeColorCountHanlder = (item: IItem) => {
-        const isItemAdded = !!unref(lists).find((storeList) => storeList.index === unref(list).index)?.items.find((listItem) => listItem.index === item.index);
-        itemsColors.value = itemsColors.value.filter((itemColor) => itemColor.index !== item.index);
-        itemsColors.value.push(item);
-        // if (isItemAdded) {
-
-        // }
+        if (isChecked) {
+            const selectedItemsWithoutUpdatedItem = unref(selectedItems).filter((itemSelected) => itemSelected.index !== item.index);
+            storeLists.updateList({ ...unref(list), items: [...selectedItemsWithoutUpdatedItem, item] });
+        }
     };
 
     const checkBoxModel = computed({
-        get: () => !!unref(itemsModel).length,
+        get: () => !!unref(selectedItems).length,
         set: (value: boolean) => {
             if (value) {
-                const test = unref(list).items.filter((item) => !unref(itemsColors).find((itemColor) => item.index !== itemColor.index));
-                storeLists.addList({ ...unref(list), items: [...test, ...unref(itemsColors)] });
+                storeLists.addList({ ...unref(list), items: unref(colorsItems) });
             } else {
                 storeLists.deleteList(unref(list));
             }
@@ -67,7 +58,7 @@
     });
 
     const checkboxType = computed<IPropsCheckbox['type']>(() => {
-        const isAllChecked = unref(itemsModel).length === unref(list).items.length;
+        const isAllChecked = unref(selectedItems).length === unref(list).items.length;
         if (isAllChecked) return 'check';
         return 'square';
     });
@@ -88,10 +79,11 @@
             </template>
             <div class="list__contanier">
                 <Item
-                    v-model="itemsModel"
-                    @changeColorCount="changeColorCountHanlder"
-                    @changeColor="changeColorHanlder"
+                    v-model="selectedItems"
+                    @changeColorCount="updateItemByColor"
+                    @changeColor="updateItemByColor"
                     v-for="item in list.items"
+                    :color-items="colorsItems"
                     :key="item.index"
                     :current-item="item">
                 </Item>
