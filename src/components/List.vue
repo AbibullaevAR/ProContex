@@ -3,7 +3,6 @@
         unref,
         toRefs,
         computed,
-        ref,
         watch,
     } from 'vue';
     import { storeToRefs } from 'pinia';
@@ -11,7 +10,7 @@
     import CheckBox, { IPropsCheckbox } from './CheckBox.vue';
     import DropDown from './DropDown.vue';
     import Item from './Item.vue';
-    import { IItem, IList } from '../types';
+    import { IList } from '../types';
 
     interface IProps {
         list: IList
@@ -20,45 +19,25 @@
     const props = defineProps<IProps>();
     const { list } = toRefs(props);
     const storeLists = useStoreList();
-    const { lists } = storeToRefs(storeLists);
-    const colorsItems = ref<IItem[]>(unref(list).items);
+    const { selectedItemsIds, updatedItems } = storeToRefs(storeLists);
 
-    const selectedItems = computed({
-        get: () => unref(lists).find((storeList) => storeList.index === unref(list).index)?.items || [],
-        set: (items: IItem[]) => {
-            const isListAdded = !!unref(lists).find((storeList) => storeList.index === unref(list).index);
-            const isListNew = !isListAdded;
-            if (isListNew) storeLists.addList({ ...unref(list), items });
-            if (isListAdded && items.length === 0) storeLists.deleteList(unref(list));
-            if (isListAdded && items.length) {
-                storeLists.updateList({ ...unref(list), items });
-            }
-        },
-    });
-
-    const updateItemByColor = (item: IItem, isChecked: boolean) => {
-        colorsItems.value = colorsItems.value.filter((itemColor) => itemColor.index !== item.index);
-        colorsItems.value.push(item);
-
-        if (isChecked) {
-            const selectedItemsWithoutUpdatedItem = unref(selectedItems).filter((itemSelected) => itemSelected.index !== item.index);
-            storeLists.updateList({ ...unref(list), items: [...selectedItemsWithoutUpdatedItem, item] });
-        }
-    };
+    const currentSelectedItems = computed(() => unref(selectedItemsIds).filter((selecteItemId) => unref(list).items.find((item) => item.index === selecteItemId)));
 
     const checkBoxModel = computed({
-        get: () => !!unref(selectedItems).length,
+        get: () => !!unref(currentSelectedItems).length,
         set: (value: boolean) => {
+            const currentItemsIds = unref(list).items.map((item) => item.index);
+            const selectedIdsWithoutCurrentIds = unref(selectedItemsIds).filter((index) => !currentItemsIds.includes(index));
             if (value) {
-                storeLists.addList({ ...unref(list), items: unref(colorsItems) });
+                storeLists.selectItemsIds([...selectedIdsWithoutCurrentIds, ...unref(currentItemsIds)]);
             } else {
-                storeLists.deleteList(unref(list));
+                storeLists.selectItemsIds(selectedIdsWithoutCurrentIds);
             }
         },
     });
 
     const checkboxType = computed<IPropsCheckbox['type']>(() => {
-        const isAllChecked = unref(selectedItems).length === unref(list).items.length;
+        const isAllChecked = unref(currentSelectedItems).length === unref(list).items.length;
         if (isAllChecked) return 'check';
         return 'square';
     });
@@ -79,11 +58,10 @@
             </template>
             <div class="list__contanier">
                 <Item
-                    v-model="selectedItems"
-                    @changeColorCount="updateItemByColor"
-                    @changeColor="updateItemByColor"
-                    v-for="item in list.items"
-                    :color-items="colorsItems"
+                    v-model="selectedItemsIds"
+                    v-model:updated-items="updatedItems"
+                    v-for="(item, index) in list.items"
+                    :index="index"
                     :key="item.index"
                     :current-item="item">
                 </Item>

@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-    import { defineModel, watch } from 'vue';
     import ListWithColors from './ListWithColors.vue';
     import List from './List.vue';
     import { IList } from '../types';
@@ -11,7 +10,7 @@
             const items: IList['items'] = [];
             for (let indexItem = 0; indexItem <= countItems; indexItem++) {
                 items.push({
-                    index: indexItem,
+                    index: `${indexItem}__${indexList}`,
                     color: 'black',
                     countColor: 0,
                 });

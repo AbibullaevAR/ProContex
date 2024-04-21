@@ -1,7 +1,7 @@
 export interface IItem {
     countColor: number,
     color: string,
-    index: number
+    index: string,
 }
 
 export interface IList {
