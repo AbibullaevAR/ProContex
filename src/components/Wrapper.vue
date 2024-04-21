@@ -32,14 +32,14 @@
         <div class="wrapper__block">
             <List
                 v-for="list in lists"
-                :key="list.index"
+                :key="`select-colors__${list.index}`"
                 :list="list"
             ></List>
         </div>
         <div class="wrapper__block">
             <ListWithColors
                 v-for="list in lists"
-                :key="list.index"
+                :key="`visible-colors__${list.index}`"
                 :list="list"
             ></ListWithColors>
         </div>

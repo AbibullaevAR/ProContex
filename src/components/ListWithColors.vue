@@ -79,8 +79,8 @@
             >
                 <div
                     class="list-with-colors__square"
-                    v-for="color in colorGroup"
-                    :key="color"
+                    v-for="(color, index) in colorGroup"
+                    :key="index"
                     :style="{ 'background-color': color }"
                 >
                 </div>
